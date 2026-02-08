@@ -1,10 +1,16 @@
 // mainscript.js
 import { initQRScene } from "./qrScanner.js";
+import { createVideoPlane } from "./videoPlane.js";
+import {
+  Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight,
+  MeshBuilder, StandardMaterial, Color3, VideoTexture, 
+} from "babylonjs";
 
 console.log("[main] script loaded");
 
 const canvas = document.getElementById("renderCanvas");
 const startBtn = document.getElementById("startBtn");
+
 
 if (!canvas) {
   throw new Error("Canvas with id 'renderCanvas' not found");
@@ -29,7 +35,11 @@ startBtn.addEventListener("click", async () => {
       // Optional: stop scanning after first detection
       // cleanup?.();
     });
-
+    const { videoPlane, videoTexture } = createVideoPlane(cleanup.scene);
+    if(cleanup.qrText == "1"){
+      videoPlane.setEnabled(true);
+      videoTexture.video.play();
+    }
     startBtn.style.display = "none";
     console.log("[main] QR scene started");
 

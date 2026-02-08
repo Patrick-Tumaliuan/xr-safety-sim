@@ -93,6 +93,7 @@ export async function initQRScene(canvas, onDetected) {
 
   // Return a cleanup handle
   return () => {
+    scene
     scene.dispose();
     stream.getTracks().forEach(t => t.stop());
     engine.dispose();
