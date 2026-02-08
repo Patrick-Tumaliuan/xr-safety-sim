@@ -1,7 +1,7 @@
 import jsQR from "jsqr";
 import {
   Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight,
-  MeshBuilder, StandardMaterial, Color3, VideoTexture
+  MeshBuilder, StandardMaterial, Color3, VideoTexture, 
 } from "babylonjs";
 
 export async function initQRScene(canvas, onDetected) {
@@ -24,10 +24,11 @@ export async function initQRScene(canvas, onDetected) {
   video.srcObject = stream;
   await video.play();
 
+  //Look at this
   const plane = MeshBuilder.CreatePlane("videoPlane", { width: 2, height: 2 }, scene);
   plane.parent = camera;
   plane.position = new Vector3(0, 0, 1);
-
+  
   const tex = new VideoTexture("camTex", video, scene, true, false, VideoTexture.TRILINEAR_SAMPLINGMODE, { autoPlay: true });
   const mat = new StandardMaterial("videoMat", scene);
   mat.diffuseTexture = tex;
@@ -35,12 +36,20 @@ export async function initQRScene(canvas, onDetected) {
   mat.disableLighting = true;
   plane.material = mat;
 
-  function syncPlane() {
+  function syncPlaneToFrustum(engine, camera, plane, distance = 1){
+    
+    const frustumHeight = 2 * distance * Math.tan(camera.fov / 2);
     const aspect = engine.getRenderWidth() / engine.getRenderHeight();
-    plane.scaling.x = 2 * aspect;
+    const frustumWidth = frustumHeight * aspect;
+
+    plane.position.set(0, 0, distance);
+    plane.scaling.x = frustumWidth;  // plane created with size=1 → scale to fit width
+    plane.scaling.y = frustumHeight; // scale to fit height
+
   }
-  syncPlane();
-  window.addEventListener("resize", () => { engine.resize(); syncPlane(); });
+  syncPlaneToFrustum(engine, camera, plane, 1);
+ 
+  window.addEventListener("resize", () => { engine.resize(); syncPlaneToFrustum();});
 
   // Hidden canvas for decoding
   const qrCanvas = document.createElement("canvas");
@@ -89,3 +98,6 @@ export async function initQRScene(canvas, onDetected) {
     engine.dispose();
   };
 }
+
+console.log("canvas aspect =", (engine.getRenderWidth()/engine.getRenderHeight()).toFixed(3));
+console.log("video aspect  =", (video.videoWidth/video.videoHeight).toFixed(3));
