@@ -49,7 +49,7 @@ export async function initQRScene(canvas, onDetected) {
   }
   syncPlaneToFrustum(engine, camera, plane, 1);
  
-  window.addEventListener("resize", () => { engine.resize(); syncPlaneToFrustum();});
+  window.addEventListener("resize", () => { engine.resize(); syncPlaneToFrustum(engine, camera, plane, 1);});
 
   // Hidden canvas for decoding
   const qrCanvas = document.createElement("canvas");
@@ -99,5 +99,3 @@ export async function initQRScene(canvas, onDetected) {
   };
 }
 
-console.log("canvas aspect =", (engine.getRenderWidth()/engine.getRenderHeight()).toFixed(3));
-console.log("video aspect  =", (video.videoWidth/video.videoHeight).toFixed(3));
