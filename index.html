@@ -5,20 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scanner testing</title>
     <style>
-        html, body { margin:0; height:100%; }
-        #renderCanvas { width: 100%; height: 100%; margin: 0; overflow: hidden}
-        .start-btn{
-            
-        position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-        padding: 10px 16px; border: none; border-radius: 6px; font-size: 16px;
-        background: #1a73e8; color: white;
-
+        html, body { margin:0; height: 100%; }
+        #renderCanvas { margin: 0; height: 100%; background-color: black;}
+        #hiddenCanvas { margin: 0; height: 100%; display: none;}
+        
+        #enterARBtn {
+            padding: 10px 20px;
+            background: #0078ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
         }
+
+        #enterARBtn:hover {
+            background: #0063cc;
+        }
+
     </style>
 </head>
 <body>
-    <button id="startBtn" class="start-btn">Start Camera</button>
-    <canvas id = "renderCanvas"></canvas>
+    <canvas id = "renderCanvas"> </canvas>
+    <canvas id = "hiddenCanvas"></canvas>
     <script type = "module" src = "./src/mainscript.js"></script>
+    <!-- Popup Background -->
+    <div id="popupOverlay" class="overlay hidden">
+        <div class="popup">
+            <h2>Ready to Enter AR?</h2>
+            <p>Tap the button below to continue.</p>
+            <button id="enterARBtn">Enter AR</button>
+     </div>
+</div>
 </body>
 </html>
