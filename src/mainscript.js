@@ -67,6 +67,7 @@ const tracks = stream?.getTracks?.() ?? [];
 //Pop up button (This is forced because entering XR requires user activation Event)
 function showPopup() {
   document.getElementById("popupOverlay").classList.remove("hidden");
+  console.log("buh");
 }
 
 document.getElementById("enterARBtn").addEventListener("click", async () => {
@@ -76,11 +77,8 @@ document.getElementById("enterARBtn").addEventListener("click", async () => {
 
   // THIS MUST BE INSIDE THE BUTTON CLICK
   try {
-    const xr = await scene.createDefaultXRExperienceAsync({
-      uiOptions: { sessionMode: "immersive-ar" }
-    });
-
     await xr.baseExperience.enterXRAsync(); 
+    console.log("buh");
   } catch (e) {
     console.error("Failed to start AR:", e);
   }
@@ -92,18 +90,17 @@ function onDetected(value) {
   console.log("[QR] Detected:", value);
   if(value == "1"){
     alert("Switching");
-      
+
       //stop camera from playing in background
       tracks.forEach(t => t.stop());
       video.pause();
       video.srcObject = null;
 
-      xr.baseExperience.enterXRAsync();
+      showPopup();
 
       videoPlane.parent = null;
       videoPlane.position.copyFrom(camera.getFrontPosition(2));
       mat.diffuseTexture = testingVideoTex;
-      testingVideoTex.video.play();
   }
   else
     alert("QR:" + value);
