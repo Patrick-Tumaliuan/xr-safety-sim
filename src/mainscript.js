@@ -1,152 +1,56 @@
-import jsQR from "jsqr";
-import * as BABYLON from "babylonjs";
+import * as BABYLON from "@babylonjs/core";
+import "@babylonjs/loaders"
+import { startQR, ensureScanLoopOnce, stopQR } from "./qrScanner";
+import {getSceneSetup} from "./scene";
 
-let canvas = document.getElementById("renderCanvas");
-let video = document.createElement("video"); //video element in html
-video.playsInline = true;
+//global variable
+let showMain = true;
 
+//HTML CSS Elements
+let mainCanvas = document.getElementById("babylonCanvas");
+let qrCanvas = document.getElementById("qrCanvas");
 
-let qrCanvas = document.getElementById("hiddenCanvas"); //grabbing the canvas used for QR Scanning
-const qrContext = qrCanvas.getContext("2d", {willReadFrequently: true});
+let toggleButton = document.getElementById("toggleScene-btn");
 
+const {scene, engine} = getSceneSetup();
 
-let engine = new BABYLON.Engine(canvas, true);
-let scene = new BABYLON.Scene(engine);
-let camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 3, BABYLON.Vector3.Zero(), scene);
+//const deviceCamera = new BABYLON.DeviceOrientationCamera("deviceCamera", BABYLON.Vector3.Zero(), scene);
+const uniCamera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene, true);
+uniCamera.setTarget(BABYLON.Vector3.Zero());
+uniCamera.attachControl(mainCanvas, true);
 
-const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-
-scene.activeCamera = camera;
-camera.attachControl(canvas, true);
-
+const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0), scene);
 light.intensity = 0.7;
 
-//webXR default template
-const xr = await scene.createDefaultXRExperienceAsync({
-  uiOptions: { sessionMode: "immersive-ar" } // webXR default settings
-});
 
 
-//Video Plane
+//testing button
 
-const videoPlane = BABYLON.MeshBuilder.CreatePlane("videoPlane", {width: 1, height: 1}, scene);
-videoPlane.parent = camera;
-videoPlane.position = new BABYLON.Vector3(0,0,1);
+toggleButton.addEventListener("click", async ()=>{
 
-
-const stream = await navigator.mediaDevices.getUserMedia({
-  video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
-  audio: false
-});
-
-video.srcObject = stream;
-await video.play();
-
-const videoTex = new BABYLON.VideoTexture("camTex", video, scene, true, false, BABYLON.VideoTexture.TRILINEAR_SAMPLINGMODE, {autoPlay: true});
-const mat = new BABYLON.StandardMaterial("videoMat", scene);
-mat.diffuseTexture = videoTex;
-mat.emissiveColor = new BABYLON.Color3(1,1,1);
-videoPlane.material = mat;
-
-//Adjust the videoPlane to the projection volume(the frustum)
-const frustumHeight = 2 * 1 * Math.tan(camera.fov / 2);
-const aspect = engine.getRenderWidth() / engine.getRenderHeight();
-const frustumWidth = frustumHeight * aspect;
-
-videoPlane.position.set(0, 0, 1);
-videoPlane.scaling.x = frustumWidth;  // plane created with size=1 → scale to fit width
-videoPlane.scaling.y = frustumHeight; // scale to fit height
-
-// --------------------------------------------------SCAN FOR QR HERE----------------------------------------------------------------------------------
-let lastResult = "";
-let lastTime = 0;
-const SCAN_INTERVAL_MS = 150;
-const tracks = stream?.getTracks?.() ?? [];
-
-
-//Pop up button (This is forced because entering XR requires user activation Event)
-function showPopup() {
-  document.getElementById("popupOverlay").classList.remove("hidden");
-  console.log("buh");
-}
-
-document.getElementById("enterARBtn").addEventListener("click", async () => {
-
-  // Hide popup immediately
-  document.getElementById("popupOverlay").classList.add("hidden");
-
-  // THIS MUST BE INSIDE THE BUTTON CLICK
-  try {
-    await xr.baseExperience.enterXRAsync(); 
-    console.log("buh");
-  } catch (e) {
-    console.error("Failed to start AR:", e);
+  showMain = !showMain;
+  
+  if(showMain){
+    mainCanvas.classList.remove("hidden");
+    qrCanvas.classList.add("hidden");
+    stopQR();
   }
-});
-
-//What happens with detected Value
-const testingVideoTex = new BABYLON.VideoTexture("testTex", "/test.mp4", scene, true, false, BABYLON.VideoTexture.TRILINEAR_SAMPLINGMODE, {autoPlay: false});
-function onDetected(value) {
-  console.log("[QR] Detected:", value);
-  if(value == "1"){
-    alert("Switching");
-
-      //stop camera from playing in background
-      tracks.forEach(t => t.stop());
-      video.pause();
-      video.srcObject = null;
-
-      showPopup();
-
-      videoPlane.parent = null;
-      videoPlane.position.copyFrom(camera.getFrontPosition(2));
-      mat.diffuseTexture = testingVideoTex;
+  else{
+    mainCanvas.classList.add("hidden");
+    qrCanvas.classList.remove("hidden");
+    await startQR();
+    ensureScanLoopOnce();
   }
-  else
-    alert("QR:" + value);
-}
+
+} )
 
 
-// QR Scan Loop
-function scanLoop(ts) {
-    if (!lastTime || ts - lastTime >= SCAN_INTERVAL_MS) {
-      lastTime = ts;
 
-      const vw = video.videoWidth || 640;
-      const vh = video.videoHeight || 480;
 
-      if (vw && vh) {
-        const targetW = 640;
-        const scale = targetW / vw;
-        const w = Math.min(targetW, vw);
-        const h = Math.round(vh * scale);
 
-        qrCanvas.width = w;
-        qrCanvas.height = h;
-
-        qrContext.drawImage(video, 0, 0, w, h);
-        const imgData = qrContext.getImageData(0, 0, w, h);
-
-        const code = jsQR(imgData.data, imgData.width, imgData.height, {
-          inversionAttempts: "dontInvert"
+window.addEventListener("resize", function () {
+                engine.resize();
         });
-
-        if (code?.data && code.data !== lastResult) {
-          lastResult = code.data;
-          onDetected(code.data);
-        }
-      }
-    }
-    requestAnimationFrame(scanLoop);
-  }
-  requestAnimationFrame(scanLoop);
-
-//render loop
-engine.runRenderLoop(() => {
+engine.runRenderLoop(function() {
   scene.render()
 });
-
-
-window.addEventListener("resize", () => engine.resize());
-
-
