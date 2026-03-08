@@ -24,14 +24,16 @@ export function createVideoPlane(scene) {
     { width: 4, height: 2.25, sideOrientation: BABYLON.Mesh.DOUBLESIDE },
     scene
   );
+  videoPlane.rotation.y = Math.PI;
 
   const videoMat = new BABYLON.StandardMaterial("videoMat", scene);
   videoMat.emissiveTexture = videoTexture;
   videoMat.disableLighting = true;
-
+  
   videoPlane.material = videoMat;
   videoPlane.position.z = 2;
   videoPlane.setEnabled(false); // hidden by default
-
   return { videoPlane, videoTexture };
 }
+
+

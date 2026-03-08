@@ -60,18 +60,73 @@ const textPlane = createTextPlane(scene);
 setTimeout(() => {
   qrScanned = true;
   popup.isVisible = false;
-  showTextPlane();
+  showVideoPlane();
 }, 2000);
 
 /* ======================
    SHOW/HIDE FUNCTIONS
 ====================== */
+
+function createVideoControls() {
+  const meshUI = GUI.AdvancedDynamicTexture.CreateForMesh(videoPlane);
+  meshUI.idealWidth = 1024;
+   
+
+  //  CONTROL BAR 
+  const bar = new GUI.Rectangle();
+  bar.height = "120px";
+  bar.width = 1;
+  bar.thickness = 0;
+  bar.background = "rgba(0,0,0,0.55)";
+  bar.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+  meshUI.addControl(bar);
+
+  //  PLAY BUTTON 
+  const playBtn = GUI.Button.CreateSimpleButton("playBtn", "▶");
+  playBtn.width = "120px";
+  playBtn.height = "120px";
+  playBtn.color = "white";
+  playBtn.fontSize = 60;
+  playBtn.background = "rgba(0,0,0,0.3)";
+  playBtn.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+  playBtn.left = "20px";
+
+  playBtn.onPointerUpObservable.add(() => {
+    const video = videoTexture.video;
+   // video.paused ? video.play() : video.pause();
+   video.play();
+   console.log("Video playing?", !video.paused);
+
+  });
+
+  bar.addControl(playBtn);
+
+  //  VOLUME SLIDER 
+  const volumeSlider = new GUI.Slider();
+  volumeSlider.minimum = 0;
+  volumeSlider.maximum = 1;
+  volumeSlider.value = 1;
+  volumeSlider.height = "40px";
+  volumeSlider.width = "300px";
+  volumeSlider.color = "white";
+  volumeSlider.background = "gray";
+  volumeSlider.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+  volumeSlider.right = "20px";
+
+  volumeSlider.onValueChangedObservable.add((value) => {
+    videoTexture.video.volume = value;
+  });
+
+  bar.addControl(volumeSlider);
+}
 function showVideoPlane() {
+   console.log("readyState:", videoTexture.video.readyState);
+ 
   textPlane.setEnabled(false);
   videoPlane.setEnabled(true);
-  videoTexture.video.play();
+  createVideoControls();   //  control bar appears here
+  
 }
-
 function showTextPlane() {
   videoPlane.setEnabled(false);
   textPlane.setEnabled(true);
