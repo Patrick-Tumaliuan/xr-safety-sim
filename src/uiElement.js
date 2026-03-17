@@ -3,14 +3,18 @@ import * as GUI from "@babylonjs/gui"
 import { getSceneSetup } from "./scene";
 
 const {scene, engine} = getSceneSetup();
+let lastW = -1, lastH = -1;
+let resizeAdded = false;
 
-function videoUI(slate = GUI.HolographicSlate){
+function videoUI(slate){
     const videoPlane = BABYLON.MeshBuilder.CreatePlane("videoUI",{
-        width: slate.dimensions.x * 0.9,
-        height: slate.dimensions.y * 0.9
+        width: 1.6,
+        height: 0.9
     }, scene);
 
-    
+    //anchor medium for video to attach to
+    const centerAnchor = new BABYLON.TransformNode("slateCenter", scene);
+    centerAnchor.parent = slate.node;
 
     const videoTex = new BABYLON.VideoTexture(
         "clip",
@@ -27,10 +31,34 @@ function videoUI(slate = GUI.HolographicSlate){
     videoMat.emissiveColor = BABYLON.Color3.White();
     videoMat.backFaceCulling = false;
     videoPlane.material = videoMat;
-    videoPlane.parent = slate.mesh;
-    videoPlane.translate(BABYLON.Axis.Z, -0.5 , BABYLON.Space.LOCAL);
-    videoPlane.translate(BABYLON.Axis.Y, -2.5 , BABYLON.Space.LOCAL);
-    videoPlane.translate(BABYLON.Axis.X, 4 , BABYLON.Space.LOCAL);
+    videoPlane.parent = centerAnchor;
+    centerAnchor.position.z = -0.005;
+
+    let baseSlate = slate.minDimensions.clone();
+    let basePlaneSize = new BABYLON.Vector2(1.6, 0.9);
+    
+
+    
+    function updateVideoOnResize(){
+        const slateW = slate.dimensions.x;
+        const slateH = slate.dimensions.y;
+        const sx = slateW / basePlaneSize.x; 
+        const sy = slateH / basePlaneSize.y ;
+
+        centerAnchor.position.x = slateW*0.5;
+        centerAnchor.position.y = -slateH*0.5 - slate.titleBarHeight;
+        console.log(centerAnchor.absolutePosition);
+
+        videoPlane.scaling.x = sx;
+        videoPlane.scaling.y = sy;
+    }
+    scene.onBeforeRenderObservable.add(() => {
+        if(slate.dimensions.x !== lastW || slate.dimensions.y !== lastH){
+            updateVideoOnResize();
+            lastW = slate.dimensions.x;
+            lastH = slate.dimensions.y;
+        }
+    });
 }
 
 
@@ -65,20 +93,26 @@ export function createUI(qrValue){
     console.log("This is the qrValue:", qrValue);
     var manager = new GUI.GUI3DManager(scene);
     const slate = new GUI.HolographicSlate("test");
-    slate.minDimensions = new BABYLON.Vector2(8,4.5);
-    slate.dimensions = new BABYLON.Vector2(8,4.5);
-    slate.titleBarHeight = 0.75;
+    slate.minDimensions = new BABYLON.Vector2(1.6,0.9);
+    slate.dimensions = new BABYLON.Vector2(1.6,0.9);
+    slate.titleBarHeight = 0.1;
     manager.addControl(slate);
 
+    const cleanedQR = qrValue.trim().toLowerCase();
 
-    if(qrValue == "text"){
+
+    if(cleanedQR.includes("text")){
         console.log("buh");
         textUI(slate);
     }
-    if(qrValue == "video"){
+    if(cleanedQR.includes("video")){
         console.log("zuh")
         videoUI(slate);
     }
 
+
+   
+
 }
+
 
