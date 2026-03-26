@@ -1,102 +1,91 @@
-import jsQR from "jsqr";
-import {
-  Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight,
-  MeshBuilder, StandardMaterial, Color3, VideoTexture, 
-} from "babylonjs";
+//qrScanner.js  is for [Camera feed + jsQR scanning]
+const videoEl  = document.getElementById("camera-feed");
+const qrCanvas = document.getElementById("qr-canvas");
+const qrCtx    = qrCanvas.getContext("2d", { willReadFrequently: true });
 
-export async function initQRScene(canvas, onDetected) {
-  const engine = new Engine(canvas, true);
-  const scene = new Scene(engine);
+let stream     = null;
+let scanning   = false;
+let lastResult = "";
+const INTERVAL = 60;
+let lastTime   = 0;
+let rafId      = null;
 
-  const camera = new ArcRotateCamera("cam", Math.PI/2, Math.PI/3, 3, Vector3.Zero(), scene);
-  camera.attachControl(canvas, true);
-  new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+export async function startQR(onDetected) {
+    if (stream) return;
 
-  // GUI popup: use your own UI system or Babylon GUI if you added it
-  const video = document.createElement("video");
-  video.setAttribute("playsinline", "true");
-  video.muted = true;
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" },
+                width:  { ideal: 1280 },
+                height: { ideal: 720 },
+            },
+            audio: false,
+        });
 
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
-    audio: false
-  });
-  video.srcObject = stream;
-  await video.play();
+        videoEl.srcObject = stream;
+        await videoEl.play().catch(() => {});
 
-  //Look at this
-  const plane = MeshBuilder.CreatePlane("videoPlane", { width: 2, height: 2 }, scene);
-  plane.parent = camera;
-  plane.position = new Vector3(0, 0, 1);
-  
-  const tex = new VideoTexture("camTex", video, scene, true, false, VideoTexture.TRILINEAR_SAMPLINGMODE, { autoPlay: true });
-  const mat = new StandardMaterial("videoMat", scene);
-  mat.diffuseTexture = tex;
-  mat.emissiveColor = new Color3(1,1,1);
-  mat.disableLighting = true;
-  plane.material = mat;
+        scanning = true;
+        rafId = requestAnimationFrame(function loop(ts) {
+            if (!scanning) return;
+            if (ts - lastTime >= INTERVAL) {
+                lastTime = ts;
+                tryDecode(onDetected);
+            }
+            rafId = requestAnimationFrame(loop);
+        });
 
-  function syncPlaneToFrustum(engine, camera, plane, distance = 1){
-    
-    const frustumHeight = 2 * distance * Math.tan(camera.fov / 2);
-    const aspect = engine.getRenderWidth() / engine.getRenderHeight();
-    const frustumWidth = frustumHeight * aspect;
-
-    plane.position.set(0, 0, distance);
-    plane.scaling.x = frustumWidth;  // plane created with size=1 → scale to fit width
-    plane.scaling.y = frustumHeight; // scale to fit height
-
-  }
-  syncPlaneToFrustum(engine, camera, plane, 1);
- 
-  window.addEventListener("resize", () => { engine.resize(); syncPlaneToFrustum(engine, camera, plane, 1);});
-
-  // Hidden canvas for decoding
-  const qrCanvas = document.createElement("canvas");
-  const qrCtx = qrCanvas.getContext("2d", { willReadFrequently: true });
-
-  let lastResult = "";
-  let lastTime = 0;
-
-  function scanLoop(ts) {
-    const interval = 150; // ms
-    if (!lastTime || ts - lastTime >= interval) {
-      lastTime = ts;
-
-      const vw = video.videoWidth || 640;
-      const vh = video.videoHeight || 480;
-      const targetW = 640;
-      const scale = targetW / vw;
-      const w = Math.min(targetW, vw);
-      const h = Math.round(vh * scale);
-
-      qrCanvas.width = w;
-      qrCanvas.height = h;
-
-      qrCtx.drawImage(video, 0, 0, w, h);
-      const imgData = qrCtx.getImageData(0, 0, w, h);
-
-      const code = jsQR(imgData.data, imgData.width, imgData.height, {
-        inversionAttempts: "dontInvert"
-      });
-
-      if (code?.data && code.data !== lastResult) {
-        lastResult = code.data;
-        onDetected?.(code.data);
-      }
+        document.getElementById("status").textContent = "Camera ready — scan a QR code";
+    } catch (e) {
+        console.error("Camera error:", e);
+        document.getElementById("status").textContent = "Camera access denied";
     }
-    requestAnimationFrame(scanLoop);
-  }
-  requestAnimationFrame(scanLoop);
-
-  engine.runRenderLoop(() => scene.render());
-
-  // Return a cleanup handle
-  return () => {
-    scene
-    scene.dispose();
-    stream.getTracks().forEach(t => t.stop());
-    engine.dispose();
-  };
 }
 
+// Stop the decode loop only — does NOT touch stream or videoEl. 
+export function stopQR() {
+    scanning = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+}
+
+// Fully kills camera and hides video stream. 
+export function hardStopQR() { //
+  alert("hard Stop QR");
+    stopQR();
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+    videoEl.srcObject = null;
+    videoEl.style.display = "none";
+    lastResult = "";
+}
+
+function tryDecode(onDetected) {
+    if (!videoEl.readyState || videoEl.videoWidth === 0) return;
+
+    if (qrCanvas.width  !== videoEl.videoWidth ||
+        qrCanvas.height !== videoEl.videoHeight) {
+        qrCanvas.width  = videoEl.videoWidth;
+        qrCanvas.height = videoEl.videoHeight;
+    }
+
+    qrCtx.drawImage(videoEl, 0, 0, qrCanvas.width, qrCanvas.height);
+
+    let imgData;
+    try {
+        imgData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+    } catch {
+        return;
+    }
+
+    const code = jsQR(imgData.data, imgData.width, imgData.height, {
+        inversionAttempts: "dontInvert",
+    });
+
+    if (code?.data && code.data.trim() !== lastResult) {
+        lastResult = code.data.trim();
+        onDetected(lastResult);
+    }
+}

@@ -15,7 +15,8 @@
   "type": "module",
   "dependencies": {
     "@babylonjs/loaders": "^8.49.1",
-    "babylonjs": "^8.49.1",
+    "@babylonjs/core": "^8.49.1",
+    "@babylonjs/gui": "^8.49.1",
     "jsqr": "^1.4.0"
   },
   "devDependencies": {
