@@ -36,7 +36,7 @@ export async function startQR(onDetected) {
             rafId = requestAnimationFrame(loop);
         });
 
-        document.getElementById("status").textContent = "Camera ready — scan a QR code";
+        document.getElementById("status").textContent = "Camera ready — scan a QR code (TEST)";
     } catch (e) {
         console.error("Camera error:", e);
         document.getElementById("status").textContent = "Camera access denied";
