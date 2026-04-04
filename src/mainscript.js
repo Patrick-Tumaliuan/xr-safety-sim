@@ -1,5 +1,6 @@
 import * as BABYLON from "@babylonjs/core";
 import "@babylonjs/loaders"
+import { createUI } from "./uiElement";
 import { startQR, ensureScanLoopOnce, stopQR } from "./qrScanner";
 import {getSceneSetup} from "./scene";
 
@@ -12,15 +13,13 @@ let qrCanvas = document.getElementById("qrCanvas");
 
 let toggleButton = document.getElementById("toggleScene-btn");
 
-const {scene, engine} = getSceneSetup();
+const {scene, engine, camera} = getSceneSetup();
 
-//const deviceCamera = new BABYLON.DeviceOrientationCamera("deviceCamera", BABYLON.Vector3.Zero(), scene);
-const uniCamera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene, true);
-uniCamera.setTarget(BABYLON.Vector3.Zero());
-uniCamera.attachControl(mainCanvas, true);
 
-const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0), scene);
-light.intensity = 0.7;
+
+
+
+createUI("video");
 
 
 

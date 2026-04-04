@@ -2,7 +2,7 @@ import * as BABYLON from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui"
 import { getSceneSetup } from "./scene";
 
-const {scene, engine} = getSceneSetup();
+const {scene, engine, camera} = getSceneSetup();
 let lastW = -1, lastH = -1;
 let resizeAdded = false;
 
@@ -23,7 +23,7 @@ function videoUI(slate){
         true,
         false,
         BABYLON.VideoTexture.TRILINEAR_SAMPLINGMODE,
-        {autoPlay: true, loop: true, muted: true}
+        {autoPlay: false, loop: false, muted: true}
     );
 
     const videoMat = new BABYLON.StandardMaterial("clipMat", scene);
@@ -36,8 +36,72 @@ function videoUI(slate){
 
     let baseSlate = slate.minDimensions.clone();
     let basePlaneSize = new BABYLON.Vector2(1.6, 0.9);
-    
 
+    //GUI Testing
+    const GUIPlane = BABYLON.MeshBuilder.CreatePlane("videoUI",{
+        width: 1.6,
+        height: 0.9
+    }, scene);
+    GUIPlane.parent = centerAnchor;
+    GUIPlane.position.z = -0.002;
+    const adtGUI = GUI.AdvancedDynamicTexture.CreateForMeshTexture(GUIPlane, 1.6, 0.9, true, true, BABYLON.Texture.TRILINEAR_SAMPLINGMODE);
+    const adtGUImat = new BABYLON.StandardMaterial("GUImat", scene);
+    const loadedGUI = GUI.AdvancedDynamicTexture.ParseFromSnippetAsync("#0MECMH", true, adtGUI).then(() => {
+
+//VIDEO SLIDER BAR IMPLEMENTATION
+        const slider = adtGUI.getControlByName("Slider");
+        slider.minimum = 0;
+        slider.maximum = 1;
+        slider.value = 0;
+
+        let isUserSeeking = false;
+
+        slider.onPointerDownObservable.add(() => {
+            isUserSeekingserSeeking = true;
+        });
+        slider.onPointerUpObservable.add(() => {
+            isUserSeekingserSeeking = false;
+        });
+        slider.onValueChangedObservable.add((value) => {
+        if (!isUserSeeking) return;
+        if (!videoTex.video.duration || isNaN(videoTex.video.duration)) return;
+
+        videoTex.video.currentTime = value * videoTex.video.duration;
+        });
+        
+        scene.registerBeforeRender(() => {
+        if (isUserSeeking) return;
+        if (!videoTex.video.duration || videoTex.video.paused) return;
+
+        slider.value = videoTex.video.currentTime /videoTex.video.duration;
+        });
+//VIDEO PLAY BUTTON IMPLEMENTATION
+        const playButton = adtGUI.getControlByName("PlayButton-bjs");
+        playButton.onPointerClickObservable.add(() => {
+            if(!videoTex.video.paused){
+                videoTex.video.pause();
+                paused = true;
+            }
+            else{
+                videoTex.video.play();
+                paused = false;
+            }   
+        });
+//VIDEO VOLUME BUTTON IMPLEMENTATION
+        const volumeButton = adtGUI.getControlByName("VolumeButton-bjs");
+        volumeButton.onPointerClickObservable.add(() => {
+            if(videoTex.video.muted){
+                videoTex.video.muted = false;
+            }
+            else
+                videoTex.video.muted = true;
+        });
+    });
+
+    adtGUImat.diffuseTexture = adtGUI;
+    GUIPlane.material = adtGUImat;
+
+    
     
     function updateVideoOnResize(){
         const slateW = slate.dimensions.x;
@@ -93,10 +157,12 @@ export function createUI(qrValue){
     console.log("This is the qrValue:", qrValue);
     var manager = new GUI.GUI3DManager(scene);
     const slate = new GUI.HolographicSlate("test");
+    let camFront = camera.getFrontPosition(3);
     slate.minDimensions = new BABYLON.Vector2(1.6,0.9);
     slate.dimensions = new BABYLON.Vector2(1.6,0.9);
     slate.titleBarHeight = 0.1;
     manager.addControl(slate);
+  
 
     const cleanedQR = qrValue.trim().toLowerCase();
 
@@ -108,6 +174,8 @@ export function createUI(qrValue){
     if(cleanedQR.includes("video")){
         console.log("zuh")
         videoUI(slate);
+    slate.position = new BABYLON.Vector3(camFront.x - 0.75, camFront.y + 0.5, camFront.z);
+    console.log("slate position:" + slate.position);
     }
 
 
