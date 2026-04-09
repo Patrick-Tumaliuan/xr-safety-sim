@@ -31,41 +31,78 @@ export async function initScene() {
     engine.runRenderLoop(() => scene.render());
     window.addEventListener("resize", () => engine.resize());
 
-    // WebXR
-    let xrHelper = null;
-    try {
-        const supported = await BABYLON.WebXRSessionManager
-            .IsSessionSupportedAsync("immersive-vr");
+   // WebXR
+let xrHelper = null;
+try {
+    const supported = await BABYLON.WebXRSessionManager
+        .IsSessionSupportedAsync("immersive-ar");
 
-        if (supported) {
-            xrHelper = await scene.createDefaultXRExperienceAsync({
-                disableDefaultUI: true,  
-                optionalFeatures: true,
+    if (supported) {
+        xrHelper = await scene.createDefaultXRExperienceAsync({
+            disableDefaultUI: true,
+            uiOptions: { sessionMode: "immersive-ar" },
+            optionalFeatures: ["hit-test", "anchors"]
+        });
+
+        // Enable anchor system
+        const anchorSystem = xrHelper.baseExperience.featuresManager.enableFeature(
+            BABYLON.WebXRFeatureName.ANCHOR_SYSTEM,
+            "latest",
+            { worldParentNode: scene }
+        );
+
+        // Enable hit-test
+        const hitTest = xrHelper.baseExperience.featuresManager.enableFeature(
+            BABYLON.WebXRFeatureName.HIT_TEST,
+            "latest"
+        );
+
+        // Tap to place anchor
+        scene.onPointerDown = () => {
+            const hit = hitTest.latestHitTestResult;
+            if (!hit) return;
+
+            anchorSystem.addAnchorPointUsingHitTestResultAsync(hit).then(anchor => {
+                const box = BABYLON.MeshBuilder.CreateBox("box", { size: 0.1 }, scene);
+                box.material = new BABYLON.StandardMaterial("mat", scene);
+                box.material.diffuseColor = new BABYLON.Color3(1, 0, 0);
+
+                anchor.attachedNode = box;
             });
+        };
 
-            // Not sure what this should tell us the state but idk if it actually works or not could remove this whole thing. 
-            xrHelper.baseExperience.onStateChangedObservable.add((state) => {
-                const label = {
-                    [BABYLON.WebXRState.NOT_IN_XR]:   "NOT_IN_XR",
-                    [BABYLON.WebXRState.ENTERING_XR]: "ENTERING_XR ⏳",
-                    [BABYLON.WebXRState.IN_XR]:       "IN_XR ✅",
-                    [BABYLON.WebXRState.EXITING_XR]:  "EXITING_XR 🔄",
-                }[state] ?? `UNKNOWN (${state})`;
-
-                console.log(`WebXR state → ${label}`);
-
-                if (state === BABYLON.WebXRState.IN_XR) {
-                    alert("WebXR session started!");
-                }
-            });
-
-            console.log("WebXR helper ready");
-        } else {
-            console.log("immersive-vr not supported — flat mode");
-        }
-    } catch (e) {
-        console.warn("WebXR setup error:", e);
+        console.log("WebXR AR ready");
+    } else {
+        console.log("immersive-ar not supported — flat mode");
     }
+} catch (e) {
+    console.warn("WebXR setup error:", e);
+}
+    // Enable anchor system
+const anchorSystem = xrHelper.baseExperience.featuresManager.enableFeature(
+    BABYLON.WebXRFeatureName.ANCHOR_SYSTEM,
+    "latest",
+    { worldParentNode: scene }
+);
 
+// Enable hit-test
+const hitTest = xrHelper.baseExperience.featuresManager.enableFeature(
+    BABYLON.WebXRFeatureName.HIT_TEST,
+    "latest"
+);
+
+
+scene.onPointerDown = () => {
+    const hit = hitTest.latestHitTestResult;
+    if (!hit) return;
+
+    anchorSystem.addAnchorPointUsingHitTestResultAsync(hit).then(anchor => {
+        const box = BABYLON.MeshBuilder.CreateBox("box", { size: 0.1 }, scene);
+        box.material = new BABYLON.StandardMaterial("mat", scene);
+        box.material.diffuseColor = new BABYLON.Color3(1, 0, 0);
+
+        anchor.attachedNode = box;
+    });
+};
     return { scene, engine, xrHelper };
 }
