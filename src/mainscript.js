@@ -2,24 +2,14 @@ import * as BABYLON from "@babylonjs/core";
 import "@babylonjs/loaders"
 import { createUI } from "./uiElement";
 import { startQR, ensureScanLoopOnce, stopQR } from "./qrScanner";
-import {getSceneSetup} from "./scene";
 
 //global variable
 let showMain = true;
 
 //HTML CSS Elements
-let mainCanvas = document.getElementById("babylonCanvas");
 let qrCanvas = document.getElementById("qrCanvas");
 
 let toggleButton = document.getElementById("toggleScene-btn");
-
-const {scene, engine, camera} = getSceneSetup();
-
-
-
-
-
-createUI("video");
 
 
 
@@ -27,7 +17,10 @@ createUI("video");
 
 toggleButton.addEventListener("click", async ()=>{
 
-  showMain = !showMain;
+  qrCanvas.classList.remove("hidden");
+  await startQR();
+  ensureScanLoopOnce();
+  /*showMain = !showMain;
   
   if(showMain){
     mainCanvas.classList.remove("hidden");
@@ -40,16 +33,11 @@ toggleButton.addEventListener("click", async ()=>{
     await startQR();
     ensureScanLoopOnce();
   }
-
+  */
 } )
 
 
 
 
 
-window.addEventListener("resize", function () {
-                engine.resize();
-        });
-engine.runRenderLoop(function() {
-  scene.render()
-});
+

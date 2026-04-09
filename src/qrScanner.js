@@ -1,8 +1,11 @@
 import jsQR from "jsqr";
 import { createUI } from "./uiElement";
+import {getSceneSetup} from "./scene";
 
 let camStatus = false;
+const {scene, engine, camera} = getSceneSetup();
 
+let mainCanvas = document.getElementById("babylonCanvas");
 let qrCanvas = document.getElementById("qrCanvas");
 let video = document.createElement("video");
 video.playsInline = true;
@@ -22,7 +25,16 @@ function onDetected(value){
   console.log("QR Detected:", value);
   alert("QR:" + value); 
   console.log(value);
+  mainCanvas.classList.remove("hidden");
+  qrCanvas.classList.add("hidden");
+  const xr = scene.createDefaultXRExperienceAsync({
+  uiOptions: {
+    sessionMode: "immersive-ar"
+  }
+  });
+  scene.xrHelper = xr;
   createUI(value);
+  stopQR();
 }
 
 function scanLoop(ts) {

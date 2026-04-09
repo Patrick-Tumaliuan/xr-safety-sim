@@ -7,8 +7,7 @@
     <style>
         html, body { overflow: 0; margin:0; height: 100%; width: 100%;; background-color: grey; position: relative;}
         #babylonCanvas {position: absolute;width: 100%; height: 100%;}
-        #webCanvas {position: absolute;width: 100%; height: 100%;}
-        #qrCanvas {position: absolute;width: 100%; height: 100%; background-color: red;}
+        #qrCanvas {position: absolute;width: 100%; height: 100%; background-color: black;}
         .hidden{
             display: none;
         }
@@ -35,10 +34,9 @@
     </style>
 </head>
 <body>
-    <canvas id = "babylonCanvas"> </canvas>
-    <canvas id = "webCanvas" class="hidden"></canvas>
+    <canvas id = "babylonCanvas" class="hidden"> </canvas>
     <canvas id = "qrCanvas" class="hidden"></canvas>
-    <button id = "toggleScene-btn" class = "button"> Toggle View </button>
+    <button id = "toggleScene-btn" class = "button"> Start QR </button>
     <script type = "module" src = "./src/mainscript.js"></script>
 </body>
 </html>

@@ -23,7 +23,7 @@ function videoUI(slate){
         true,
         false,
         BABYLON.VideoTexture.TRILINEAR_SAMPLINGMODE,
-        {autoPlay: false, loop: false, muted: true}
+        {autoPlay: true, loop: true, muted: true}
     );
 
     const videoMat = new BABYLON.StandardMaterial("clipMat", scene);
@@ -46,27 +46,28 @@ function videoUI(slate){
     GUIPlane.position.z = -0.002;
     const adtGUI = GUI.AdvancedDynamicTexture.CreateForMeshTexture(GUIPlane, 1.6, 0.9, true, true, BABYLON.Texture.TRILINEAR_SAMPLINGMODE);
     const adtGUImat = new BABYLON.StandardMaterial("GUImat", scene);
-    const loadedGUI = GUI.AdvancedDynamicTexture.ParseFromSnippetAsync("#0MECMH", true, adtGUI).then(() => {
+    const loadedGUI = GUI.AdvancedDynamicTexture.ParseFromFileAsync("guiTexture.json", true, adtGUI).then(() => {
 
 //VIDEO SLIDER BAR IMPLEMENTATION
         const slider = adtGUI.getControlByName("Slider");
         slider.minimum = 0;
         slider.maximum = 1;
         slider.value = 0;
+        slider.alpha = 0.5;
 
         let isUserSeeking = false;
 
         slider.onPointerDownObservable.add(() => {
-            isUserSeekingserSeeking = true;
+            isUserSeeking = true;
         });
         slider.onPointerUpObservable.add(() => {
-            isUserSeekingserSeeking = false;
+            isUserSeeking = false;
         });
         slider.onValueChangedObservable.add((value) => {
         if (!isUserSeeking) return;
         if (!videoTex.video.duration || isNaN(videoTex.video.duration)) return;
 
-        videoTex.video.currentTime = value * videoTex.video.duration;
+        videoTex.video.currentTime =  value * videoTex.video.duration;
         });
         
         scene.registerBeforeRender(() => {
@@ -77,16 +78,38 @@ function videoUI(slate){
         });
 //VIDEO PLAY BUTTON IMPLEMENTATION
         const playButton = adtGUI.getControlByName("PlayButton-bjs");
-        playButton.onPointerClickObservable.add(() => {
-            if(!videoTex.video.paused){
-                videoTex.video.pause();
-                paused = true;
-            }
-            else{
-                videoTex.video.play();
-                paused = false;
-            }   
+        playButton.onPointerEnterObservable.add(() => {
+            playButton.alpha = 1;
         });
+        playButton.onPointerOutObservable.add(() => {
+            playButton.alpha = 0;
+        });
+        
+        // Track desired state explicitly
+        let wantsPlaying = !videoTex.video.paused;
+
+        playButton.onPointerClickObservable.add(() => {
+            wantsPlaying = !wantsPlaying;
+
+            // Defer media calls to avoid XR frame deadlock
+            scene.onBeforeRenderObservable.addOnce(() => {
+                const video = videoTex.video;
+
+                if (wantsPlaying) {
+                    // Only call play if actually paused
+                    if (video.paused) {
+                        video.play(); // DO NOT await
+                    }
+                } else {
+                    // Only call pause if actually playing
+                    if (!video.paused) {
+                        video.pause();
+                    }
+                }
+            });
+        });
+
+        
 //VIDEO VOLUME BUTTON IMPLEMENTATION
         const volumeButton = adtGUI.getControlByName("VolumeButton-bjs");
         volumeButton.onPointerClickObservable.add(() => {
@@ -177,10 +200,45 @@ export function createUI(qrValue){
     slate.position = new BABYLON.Vector3(camFront.x - 0.75, camFront.y + 0.5, camFront.z);
     console.log("slate position:" + slate.position);
     }
-
-
-   
-
 }
+
+// Exit XR button
+const ui = GUI.AdvancedDynamicTexture.CreateFullscreenUI("XRUI");
+
+const exitButton = GUI.Button.CreateSimpleButton(
+  "exitXRBtn",
+  "Exit XR"
+);
+const xr = scene.xrHelper;
+exitButton.width = "180px";
+exitButton.height = "60px";
+exitButton.color = "white";
+exitButton.background = "rgba(0,0,0,0.7)";
+exitButton.cornerRadius = 8;
+exitButton.thickness = 2;
+
+// Fixed screen position
+exitButton.horizontalAlignment =
+  GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+exitButton.verticalAlignment =
+  GUI.Control.VERTICAL_ALIGNMENT_TOP;
+
+exitButton.paddingTop = "20px";
+exitButton.paddingRight = "20px";
+
+exitButton.isVisible = false; // start hidden
+
+ui.addControl(exitButton);
+
+
+exitButton.onPointerClickObservable.add(() => {
+  if (xr.baseExperience.sessionManager.inXRSession) {
+    xr.baseExperience.exitXRAsync();
+  }
+});
+
+
+
+
 
 
