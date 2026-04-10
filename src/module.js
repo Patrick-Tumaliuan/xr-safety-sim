@@ -1,12 +1,10 @@
 import * as BABYLON from "@babylonjs/core";
-import * as GUI from "@babylonjs/gui"
-import { initScene } from "./scene";
+import * as GUI from "@babylonjs/gui";
 
-const { scene, engine, xrHelper } = await initScene();
 let lastW = -1, lastH = -1;
 let resizeAdded = false;
 
-function videoUI(slate){
+function videoUI(scene, slate){
     const videoPlane = BABYLON.MeshBuilder.CreatePlane("videoUI",{
         width: 1.6,
         height: 0.9
@@ -89,7 +87,7 @@ function textUI(slate){
 
 
 
-export function createUI(qrValue){
+export function createUI(scene, qrValue){
     console.log("This is the qrValue:", qrValue);
     var manager = new GUI.GUI3DManager(scene);
     const slate = new GUI.HolographicSlate("test");
@@ -103,11 +101,11 @@ export function createUI(qrValue){
 
     if(cleanedQR.includes("text")){
         console.log("buh");
-        textUI(slate);
+        textUI(scene, slate);
     }
     if(cleanedQR.includes("video")){
         console.log("zuh")
-        videoUI(slate);
+        videoUI(scene, slate);
     }
 
 
