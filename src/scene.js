@@ -15,15 +15,6 @@ camera.setTarget(BABYLON.Vector3.Zero());
 camera.attachControl(mainCanvas, true);
 
 
-//create webXR
-/*
-const xr = await scene.createDefaultXRExperienceAsync({
-  uiOptions: {
-    sessionMode: "immersive-ar"
-  }
-});
-*/
-
 window.addEventListener("resize", function () {
                 engine.resize();
         });

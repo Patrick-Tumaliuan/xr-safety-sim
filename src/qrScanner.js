@@ -1,4 +1,5 @@
 import jsQR from "jsqr";
+import * as BABYLON from "@babylonjs/core";
 import { createUI } from "./uiElement";
 import {getSceneSetup} from "./scene";
 
@@ -21,20 +22,15 @@ const SCAN_INTERVAL_MS = 50;
 
 
 
-function onDetected(value){
+async function onDetected(value){
   console.log("QR Detected:", value);
-  alert("QR:" + value); 
   console.log(value);
   mainCanvas.classList.remove("hidden");
   qrCanvas.classList.add("hidden");
-  const xr = scene.createDefaultXRExperienceAsync({
-  uiOptions: {
-    sessionMode: "immersive-ar"
-  }
-  });
-  scene.xrHelper = xr;
-  createUI(value);
   stopQR();
+  
+  createUI(value);
+
 }
 
 function scanLoop(ts) {

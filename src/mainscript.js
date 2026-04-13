@@ -11,8 +11,6 @@ let qrCanvas = document.getElementById("qrCanvas");
 
 let toggleButton = document.getElementById("toggleScene-btn");
 
-
-
 //testing button
 
 toggleButton.addEventListener("click", async ()=>{
