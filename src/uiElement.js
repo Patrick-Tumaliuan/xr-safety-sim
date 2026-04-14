@@ -31,6 +31,9 @@ function videoUI(slate, filepath){
         {autoPlay: false, loop: true, muted: true}
     );
 
+    videoTex.video.crossOrigin = "anonymous";
+    videoTex.video.setAttribute("crossorigin", "anonymous");
+
     const videoMat = new BABYLON.StandardMaterial("clipMat", scene);
     videoMat.diffuseTexture = videoTex;
     videoMat.emissiveColor = BABYLON.Color3.White();
