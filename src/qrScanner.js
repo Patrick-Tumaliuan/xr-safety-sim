@@ -22,16 +22,31 @@ const SCAN_INTERVAL_MS = 50;
 
 
 
-async function onDetected(value){
+async function onDetected(value) {
   console.log("QR Detected:", value);
-  console.log(value);
+
+  alert(`QR Detected:\n\n${value}`);
+
+  const loadModule = confirm(
+    "Do you want to load this module?"
+  );
+
+  if (!loadModule) {
+    return;
+  }
+
   mainCanvas.classList.remove("hidden");
   qrCanvas.classList.add("hidden");
   stopQR();
-  
-  createUI(value);
-}
 
+  await createUI(value);
+
+  alert(
+    "Module loaded.\n\n" +
+    "To continue, please click the WebXR button\n" +
+    "at the bottom-right of the browser."
+  );
+}
 function scanLoop(ts) {
   if(!stream){
     scanLooping = false;
