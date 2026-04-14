@@ -12,7 +12,6 @@ let mainCanvas = document.getElementById("babylonCanvas");
 
 let toggleButton = document.getElementById("toggleScene-btn");
 
-createUI("PrinterAssets.json");
 
 //testing button
 toggleButton.addEventListener("click", async ()=>{
