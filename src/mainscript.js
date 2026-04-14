@@ -17,9 +17,9 @@ createUI("PrinterAssets.json");
 //testing button
 toggleButton.addEventListener("click", async ()=>{
 
-  mainCanvas.classList.remove("hidden");
-  //await startQR();
-  //ensureScanLoopOnce();
+  qrCanvas.classList.remove("hidden");
+  await startQR();
+  ensureScanLoopOnce();
   /*showMain = !showMain;
   
   if(showMain){
