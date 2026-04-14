@@ -30,7 +30,6 @@ async function onDetected(value){
   stopQR();
   
   createUI(value);
-
 }
 
 function scanLoop(ts) {

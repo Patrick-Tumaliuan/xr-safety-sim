@@ -1,0 +1,9 @@
+OTHER HAZARD CONSIDERATIONS:
+Mechanical: Do not place limbs inside the build area while the nozzle is in motion. The printer nozzle moves in
+order to create the object
+High Temperature: Do not touch the printer nozzle – it is heated to a high temperature in order to melt the build
+material
+Fumes & Particulates: 3-D Printing works by melting synthetic materials, this process can produce odours which
+can be irritating to some individuals.
+Ultrafine particulate can be a by-product of 3-D printing; proper ventilation is needed and printers should never be
+located close to workers.

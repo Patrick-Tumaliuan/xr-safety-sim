@@ -6,7 +6,12 @@ const {scene, engine, camera} = getSceneSetup();
 let lastW = -1, lastH = -1;
 let resizeAdded = false;
 
-function videoUI(slate, parent, filepath){
+function videoUI(slate, filepath){
+
+    const root = new BABYLON.TransformNode("videoUIRoot", scene);
+    root.parent = slate.node;
+
+
     const videoPlane = BABYLON.MeshBuilder.CreatePlane("videoUI",{
         width: 1.6,
         height: 0.9
@@ -14,9 +19,7 @@ function videoUI(slate, parent, filepath){
 
     //anchor medium for video to attach to
     const centerAnchor = new BABYLON.TransformNode("slateCenter", scene);
-    const root = new BABYLON.TransformNode("videoUIRoot", scene);
     centerAnchor.parent = root;
-    root.parent = parent;
 
     const videoTex = new BABYLON.VideoTexture(
         "clip",
@@ -25,14 +28,8 @@ function videoUI(slate, parent, filepath){
         true,
         false,
         BABYLON.VideoTexture.TRILINEAR_SAMPLINGMODE,
-        {autoPlay: true, loop: true, muted: true}
+        {autoPlay: false, loop: true, muted: true}
     );
-
-    
-    root.metadata = {
-            type: "video",
-            videoTex
-        };
 
     const videoMat = new BABYLON.StandardMaterial("clipMat", scene);
     videoMat.diffuseTexture = videoTex;
@@ -154,37 +151,88 @@ function videoUI(slate, parent, filepath){
             lastH = slate.dimensions.y;
         }
     });
-
     root.setEnabled(false);
-    return root;
+    return{root, videoTex};
 }
 
 
-function textUI(slate, parent, filepath){
-    var textGrid = new GUI.Grid("textGrid");
-    const root = new BABYLON.TransformNode("textUIRoot", scene);
-    root.parent = parent;
+function textUI(filepath) {
+    const grid = new GUI.Grid("textGrid");
 
-    const textContent = new GUI.TextBlock();
-    textContent.fontSize = 40;
-    textContent.height = "60px";
-    textContent.color = "white";
-    textGrid.addControl(textContent);
-    try {
-        fetch(filepath)
-        .then(response => response.text())
+    // Background
+    const background = new GUI.Rectangle("bg");
+    background.width = "100%";
+    background.height = "100%";
+    background.thickness = 0;
+    background.background = "black";
+    background.alpha = 0.95;
+
+    // ScrollViewer
+    const scroll = new GUI.ScrollViewer();
+    scroll.width = "100%";
+    scroll.height = "100%";
+    scroll.thickness = 0;
+    scroll.barSize = 12;
+    scroll.color = "white";
+
+    // Content container (THIS is what we size manually)
+    const contentContainer = new GUI.Rectangle("contentContainer");
+    contentContainer.width = "100%";
+    contentContainer.thickness = 0;
+
+    // Text
+    const text = new GUI.TextBlock("textContent");
+    text.fontSize = 15;
+    text.color = "white";
+    text.textWrapping = true;
+    text.resizeToFit = false;
+    text.textHorizontalAlignment =
+        GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    text.textVerticalAlignment =
+        GUI.Control.VERTICAL_ALIGNMENT_TOP;
+
+    text.paddingTop = "16px";
+    text.paddingLeft = "16px";
+    text.paddingRight = "16px";
+    text.paddingBottom = "16px";
+
+    contentContainer.addControl(text);
+    scroll.addControl(contentContainer);
+    background.addControl(scroll);
+    grid.addControl(background);
+
+    // Load text
+    fetch(filepath)
+        .then(r => r.text())
         .then(data => {
-            textContent.text = data;
-        })
-    }
-    catch(e){
-        console.error("text went wrong");
-    }
-    
-    slate.content = textGrid;
+            text.text = data;
 
-    root.setEnabled(false);
-    return root;
+            // ✅ CRITICAL FIX
+            requestAnimationFrame(() => {
+                const expectedHeight = text.computeExpectedHeight();
+
+                // Force container height to match text
+                contentContainer.height =
+                    expectedHeight + 32 + "px"; // padding safety
+
+                scroll._markAsDirty();
+                scroll.verticalBar.value = 0; // start at TOP
+            });
+        })
+        .catch(() => {
+            text.text = "Failed to load text.";
+        });
+
+    return grid;
+}
+
+function imageUI(imagePath) {
+
+    const grid = new GUI.Grid("imageGrid");
+    const image = new GUI.Image("Image", imagePath);
+    grid.addControl(image);
+
+    return grid;
 }
 
 //Testing for GUI Slides:
@@ -225,50 +273,78 @@ function createSlideNavButtons(slate, slideShow, manager) {
         slideShow.prev();
     });
 
+    /*
+    const exitBtn = new GUI.HolographicButton("exitBtn");
+    exitBtn.text = "X";
+    manager.addControl(exitBtn);
+    exitBtn.linkToTransformNode(buttonRoot);
+    exitBtn.node.scaling = new BABYLON.Vector3(0.2, 0.2, 1);
+    exitBtn.node.position = new BABYLON.Vector3(
+        slate.dimensions.x + 0.25,
+        0,
+        0
+    );
+
+    exitBtn.onPointerUpObservable.add(async () => {
+        await xr.baseExperience.exitXRAsync();
+        window.location.reload();
+        exitBtn.onPointerUpObservable = null
+    });
+    */
+
     return buttonRoot;
 }
 
 
-function createSlateSlides(slate){
-    
-    const contentRoot = new BABYLON.TransformNode("slateContentRoot", scene);
-    contentRoot.parent = slate.node;
-
+function createSlateSlides(slate, videoRoot, videoTex) {
     const slides = [];
-    var currentIndex = 0;
+    let currentIndex = 0;
 
-    return {
-        contentRoot,
-        slides,
-        show(index) {
-        slides.forEach((slide, i) => {
-            const active = i === index;
-            slide.setEnabled(active);
+    function show(index) {
+        const slide = slides[index];
 
-            const meta = slide.metadata;
-            if (meta?.type === "video") {
-                const video = meta.videoTex.video;
+        // ✅ Always stop & hide video first
+        if (videoRoot) {
+            videoRoot.setEnabled(false);
+        }
+        if (videoTex?.video && !videoTex.video.paused) {
+            videoTex.video.pause();
+            videoTex.video.muted = true;
+        }
 
-                if (!active) {
-                    if (!video.paused) {
-                        video.pause();
-                    }
-                } 
+        // ✅ Switch by slide type
+        if (slide.type === "text" || slide.type === "image") {
+            slate.content = slide.content; // GUI.Control
+        }
+
+        else if (slide.type === "video") {
+            slate.content = null; // clear GUI
+            videoRoot.setEnabled(true);
+
+            if (videoTex?.video) {
+                videoTex.video.muted = false;
+                videoTex.video.play();
             }
-        });
+        }
+
+        // ✅ Update title
+        slate.title = `Step ${index + 1}`;
 
         currentIndex = index;
-        slate.title = `Step ${index + 1}`;
-        },
-        next() {
-            this.show((currentIndex + 1) % slides.length);
-        },
-        prev() {
-            this.show((currentIndex - 1 + slides.length) % slides.length);
-        }
     }
 
+    return {
+        slides,
+        show,
+        next() {
+            show((currentIndex + 1) % slides.length);
+        },
+        prev() {
+            show((currentIndex - 1 + slides.length) % slides.length);
+        }
+    };
 }
+
 
 export async function createUI(qrValue){
     console.log("This is the qrValue:", qrValue);
@@ -278,43 +354,67 @@ export async function createUI(qrValue){
     slate.dimensions = new BABYLON.Vector2(1.6,0.9);
     slate.titleBarHeight = 0.1;
     manager.addControl(slate);
-    
-    
-
-  
+    slate.removeBehavior(slate._sixDofDragBehavior);
 
     const cleanedQR = qrValue.trim().toLowerCase();
-
-    const slideShow = createSlateSlides(slate);
 
     const response = await fetch(qrValue);
     const files = await response.json();
 
-    for (const file of files) {
-        let slide;
+    
+    let videoRoot = null;
+    let videoTex = null;
 
+    
+    
+const firstVideo = files.find(f => f.type === "video");
+    if (firstVideo) {
+        const video = videoUI(slate, firstVideo.src);
+        videoRoot = video.root;
+        videoTex = video.videoTex;
+    }
+
+    // ─────────────────────────────────────────────
+    // 4️⃣ Create hybrid slideshow controller
+    // ─────────────────────────────────────────────
+    const slideShow = createSlateSlides(slate, videoRoot, videoTex);
+
+    // ─────────────────────────────────────────────
+    // 5️⃣ Populate slides (DATA, not nodes)
+    // ─────────────────────────────────────────────
+    for (const file of files) {
         switch (file.type) {
             case "text":
-                slide = textUI(slate, slideShow.contentRoot, file.src);
+                slideShow.slides.push({
+                    type: "text",
+                    content: textUI(file.src)
+                });
+                break;
+
+            case "image":
+                slideShow.slides.push({
+                    type: "image",
+                    content: imageUI(file.src)
+                });
                 break;
 
             case "video":
-                slide = videoUI(slate, slideShow.contentRoot, file.src);
+                slideShow.slides.push({
+                    type: "video"
+                });
                 break;
 
             default:
-                console.warn("Unknown UI type:", file);
-                continue;
+                console.warn("Unknown slide type:", file);
         }
-
-        slideShow.slides.push(slide);
     }
 
+    // ─────────────────────────────────────────────
+    // 6️⃣ Show first slide
+    // ─────────────────────────────────────────────
     if (slideShow.slides.length > 0) {
         slideShow.show(0);
     }
-
-    createSlideNavButtons(slate, slideShow, manager);
 
 
     const xr = await scene.createDefaultXRExperienceAsync({
@@ -323,14 +423,13 @@ export async function createUI(qrValue){
         }
     });
 
+    createSlideNavButtons(slate, slideShow, manager, xr);
+
     const xrCamera = xr.baseExperience.camera;
     const camFront = xrCamera.getFrontPosition(2);
     //Temporary control//Temporary control:
     slate.position = new BABYLON.Vector3(camFront.x - 0.75, camFront.y + 1, camFront.z);
-    // Make slate face the camera
-    slate.lookAt(xrCamera.position);
 
-   
     window.addEventListener("keydown", (e) => {
         if (e.key === "e") {
             slideShow.next();
