@@ -85,7 +85,8 @@ function videoUI(slate, filepath){
         slider.value = videoTex.video.currentTime /videoTex.video.duration;
         });
 //VIDEO PLAY BUTTON IMPLEMENTATION
-        const playButton = adtGUI.getControlByName("PlayButton-bjs");
+        const playButton = adtGUI.getControlByName("PlayButton-bjs");'
+        playButton.alpha = 0;
         playButton.onPointerEnterObservable.add(() => {
             playButton.alpha = 1;
         });
