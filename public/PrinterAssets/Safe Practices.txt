@@ -1,0 +1,16 @@
+CHOOSE A MODEL THAT BEST SUIT YOUR NEEDS
+• Choose a manufacturer with customer support and with published safety information, always
+follow the manufacturer’s operating/user manual, ensure proper maintenance
+• Larger commercial grade 3-D printers tend to perform better and with consistency, however,
+these produce fumes and particulate matter, which would require ventilation
+• Avoid acrylonitrile butadiene styrene (ABS) as a build material and choose the appropriate
+material filament; ABS produces toxic acrylonitrile fumes; even with low concentration levels it is
+better to use other readily available build material
+• Polylactic Acid (PLA) is a preferred plastic if using around food because it is food grade safe
+CHOOSE A LOCATION WITH APPROPRIATE VENTILATION
+• Choose an area that has adequate ventilation and exhaust capability
+• If possible, place the 3-D printer in a room away from workstations or far away from workstations,
+in a fume hood if available
+• Consult with Environmental and Occupational Health Support Services (EOHSS) if you are
+unsure about a location for your 3-D printer
+3-D PRINTING TECHNOLOGY SHOULD NOT BE USED TO CREATE OR REPLACE PARTS THAT ARE REQUIRED FOR THE SAFE OPERATION OF EQUIPMENT

@@ -1,0 +1,6 @@
+[
+  { "type": "text",  "src": "/PrinterAssets/Safe Practices.txt" },
+  { "type": "text",  "src": "/PrinterAssets/Precautions.txt" },
+  { "type": "video", "src": "/PrinterAssets/PrinterVideo.mp4" },
+  { "type": "image", "src": "/PrinterAssets/printer.png"}
+]
