@@ -8,15 +8,18 @@ let showMain = true;
 
 //HTML CSS Elements
 let qrCanvas = document.getElementById("qrCanvas");
+let mainCanvas = document.getElementById("babylonCanvas");
 
 let toggleButton = document.getElementById("toggleScene-btn");
+
+createUI("PrinterAssets.json");
 
 //testing button
 toggleButton.addEventListener("click", async ()=>{
 
-  qrCanvas.classList.remove("hidden");
-  await startQR();
-  ensureScanLoopOnce();
+  mainCanvas.classList.remove("hidden");
+  //await startQR();
+  //ensureScanLoopOnce();
   /*showMain = !showMain;
   
   if(showMain){
